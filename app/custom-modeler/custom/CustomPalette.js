@@ -72,7 +72,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'custom-circle': createAction(
       'custom:circle', 'custom', 'icon-custom-circle'
     ),'custom-nyanCat': createAction(
-      "custom:nyanCat", 'custom', 'icon-custom-nyanCat',Cat.dataURL
+      "custom:nyanCat", 'custom', 'icon-custom-nyanCat',Cat.dataURL2
     ),
     'custom-separator': {
       group: 'custom',

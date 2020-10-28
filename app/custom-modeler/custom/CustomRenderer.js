@@ -3,6 +3,20 @@ import Cat from '../cat';
 import Cat2 from '../cat2'
 import BaseRenderer from 'diagram-js/lib/draw/BaseRenderer';
 import textRenderer from './TextRenderer'
+import {
+  isTypedEvent,
+  isThrowEvent,
+  isCollection,
+  getDi,
+  getSemantic,
+  getCirclePath,
+  getRoundRectPath,
+  getDiamondPath,
+  getRectPath,
+  getFillColor,
+  getStrokeColor
+} from './BpmnRenderUtil';
+
 
 import {
   componentsToPath,
@@ -12,7 +26,8 @@ import {
 import {
   append as svgAppend,
   attr as svgAttr,
-  create as svgCreate
+  create as svgCreate,
+  innerSVG
 } from 'tiny-svg';
 
 var fs = require('fs');
@@ -59,9 +74,9 @@ export default function CustomRenderer(eventBus, styles) {
       }
     });
   }
-  
+
   function renderExternalLabel(parentGfx, element) {
-    var semantic = getSemantic(element);
+
     var box = {
       width: 90,
       height: 30,
@@ -69,7 +84,7 @@ export default function CustomRenderer(eventBus, styles) {
       y: element.height / 2 + element.y
     };
 
-    return renderLabel(parentGfx, semantic.name, {
+    return renderLabel(parentGfx, getLabel(element), {
       box: box,
       fitBox: true,
       style: assign(
@@ -98,6 +113,38 @@ export default function CustomRenderer(eventBus, styles) {
 
     transform(textBox, 0, -top, 270);
   }
+
+  function as(type) {
+    return function(parentGfx, element) {
+      return handlers[type](parentGfx, element);
+    };
+  }
+
+  function renderer(type) {
+    return handlers[type];
+  }
+
+  function renderEventContent(element, parentGfx) {
+
+    var event = element.type;
+    var isThrowing = isThrowEvent(event);
+
+    if (event==='custom:nyanCat') {
+      return renderer('custom:nyanCat')(parentGfx, element, isThrowing);
+    }
+    return null;
+  }
+
+  var handlers = this.handlers = {
+    'custom:nyanCat': function(parentGfx,element){
+       var cat =this.drawNyanCat(parentGfx,element)
+       renderEventContent(element, parentGfx);
+      return cat
+    }
+  }
+
+
+  //---------------------------------------------------------------------
   this.drawTriangle = function(p, side) {
     var halfSide = side / 2,
         points,
@@ -242,28 +289,60 @@ export default function CustomRenderer(eventBus, styles) {
       y: 0,
       width: shape.width,
       height: shape.height,
-      href:Cat.dataURL2
+      href:Cat.dataURL2,
+      name:"gato"
     });
-   
-   return svgAppend(parent,catGfx);
+    
+    svgAppend(parent,catGfx);
+   return  catGfx;
 
   };
 
-  this.DrawText=function(parentGfx){
-    var text = textRenderer.createText(label || '', options);
+  this.drawText=function(parentNode){
+    /*var textArea = svgCreate('text');
+    var text = 'Miau';
+    var fontsize = 12;
+    text += '<tspan x="' + width/2 + '" y="-' + ((lines.length-i)*fontsize-fontsize/2) + '">' + lines[i] + '</tspan>';
+    //innerSVG(textArea,text);
+    svgAttr(textArea, {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: fontsize,
+      textAnchor: 'middle',
+      width: width,
+      x: width,
+      y: 0
+    });
+    svgAppend(parentNode, textArea);*/
+    var text = svgCreate('text'); 
 
-    svgClasses(text).add('djs-label');
+    svgAttr(text, {
+      fill: '#fff',
+      transform: 'translate(-15, 5)'
+    });
 
-    svgAppend(parentGfx, text);
+    svgClasses(text).add('djs-label'); 
+  
+    svgAppend(text,'Circulo'); 
 
-    return text;
+    return svgAppend(parentNode, text);
+
+  }
+
+  function as(type) {
+    return function(parentGfx, element) {
+      return handlers[type](parentGfx, element);
+    };
+  }
+
+  function renderer(type) {
+    return handlers[type];
   }
 
 }
 
 inherits(CustomRenderer, BaseRenderer);
 
-CustomRenderer.$inject = [ 'eventBus', 'styles','textRenderer'];
+CustomRenderer.$inject = ['eventBus', 'styles','textRenderer'];
 
 
 CustomRenderer.prototype.canRender = function(element) {
@@ -293,7 +372,7 @@ CustomRenderer.prototype.drawShape = function(p, element) {
     return this.drawCircle(p, element.width, element.height);
   }
 
-  if(type=='custom:nyanCat'){
+  if(type === 'custom:nyanCat'){
     /*var text=getSemantic(element).name;
     defaultStrokeColor = config && config.defaultStrokeColor;
     var text = getSemantic(element).name
@@ -303,11 +382,22 @@ CustomRenderer.prototype.drawShape = function(p, element) {
           fill: getStrokeColor(element, defaultStrokeColor)
         }
       });*/
+    //renderEmbeddedLabel(p, element, 'center-middle');
+    //return this.renderEventContent(element,p);
+    //this.renderLabel(p,type)
+    this.drawText(p)
     return this.drawNyanCat(p,element);
-    //return this.drawNyanCat(p,element);
     
   }
+
 }
+
+/*CustomRenderer.prototype.getText(parent,element){
+  var type=element.type
+  if (type==='custom:nyanCat'){
+    return this.drawText(parent)
+  }
+}*/
 
 CustomRenderer.prototype.getShapePath = function(shape) {
   var type = shape.type;
@@ -422,6 +512,8 @@ function getDataUrl(img) {
       img.src = src;
     }
   }
+
+
 
   
 
